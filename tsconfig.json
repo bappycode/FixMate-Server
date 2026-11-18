@@ -1,12 +1,15 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    // Vercel bundles the app, so resolve modules the way a bundler does. This also
+    // stops its type check from picking CommonJS typings for ESM imports (e.g. helmet).
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
     "types": ["node"]
   },
   "include": ["src"]
