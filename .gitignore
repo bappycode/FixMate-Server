@@ -13,3 +13,6 @@ dist
 # misc
 .DS_Store
 npm-debug.log*
+
+# local development entry (starts the listener on your machine; Vercel never uses it)
+src/dev.ts
