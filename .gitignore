@@ -1,0 +1,15 @@
+# dependencies
+node_modules
+
+# env files (the example file is committed, real secrets never are)
+.env*
+!.env.example
+
+# build output and tooling
+dist
+*.tsbuildinfo
+.vercel
+
+# misc
+.DS_Store
+npm-debug.log*
