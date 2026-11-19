@@ -1,7 +1,10 @@
 import { Router } from "express";
 import { verifyToken } from "../middlewares/auth.js";
+import { usersRouter } from "./users.js";
 
 export const routes = Router();
+
+routes.use("/users", usersRouter);
 
 routes.get("/health", (_req, res) => {
   res.json({ ok: true });
