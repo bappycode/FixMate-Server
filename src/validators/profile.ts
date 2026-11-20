@@ -1,22 +1,14 @@
-import { HttpError } from "../utils/httpError.js";
-
-// Photos are uploaded to ImgBB, so a profile image must come from one of its hosts.
-const IMAGE_HOSTS = new Set(["i.ibb.co", "i.ibb.co.com"]);
-const PHONE_PATTERN = /^\+?[0-9][0-9\s-]{5,18}$/;
+import { fail, parseImageUrl, PHONE_PATTERN } from "./common.js";
 
 const LIMITS = { nameMin: 2, nameMax: 80, area: 100, bio: 500 } as const;
 
 /** The only fields a user may change on their own profile. Role is deliberately not here. */
-export type ProfileUpdate = {
+type ProfileUpdate = {
   name?: string;
   phone?: string;
   area?: string;
   bio?: string;
   image?: string;
-};
-
-const fail = (message: string): never => {
-  throw new HttpError(400, message);
 };
 
 /** Reads an optional text field: undefined when absent, trimmed text when valid. */
@@ -43,21 +35,8 @@ const parsePhone = (value: unknown): string | undefined => {
   return phone;
 };
 
-const parseImage = (value: unknown): string | undefined => {
-  if (value === undefined) return undefined;
-  if (typeof value !== "string") return fail("Image must be a URL");
-
-  let url: URL;
-  try {
-    url = new URL(value);
-  } catch {
-    return fail("Image must be a valid URL");
-  }
-  if (url.protocol !== "https:" || !IMAGE_HOSTS.has(url.hostname)) {
-    return fail("Image must be uploaded through FixMate");
-  }
-  return url.toString();
-};
+// The image is optional on a profile update: absent means "keep the current photo".
+const parseImage = (value: unknown): string | undefined => (value === undefined ? undefined : parseImageUrl(value));
 
 /**
  * Validates a profile update body and returns only the allowed fields.

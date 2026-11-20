@@ -2,7 +2,7 @@ import type { Request, RequestHandler } from "express";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { env } from "../config/env.js";
 import { db } from "../lib/db.js";
-import type { UserRole } from "../types/auth.js";
+import type { AuthUser, UserRole } from "../types/auth.js";
 import { HttpError } from "../utils/httpError.js";
 
 // Better Auth (running in the Next.js client) publishes its public keys here.
@@ -71,3 +71,9 @@ const requireRole =
 export const verifyCustomer = requireRole("customer");
 export const verifyTechnician = requireRole("technician");
 export const verifyAdmin = requireRole("admin");
+
+/** The signed-in user. Only call this in routes that run verifyToken first. */
+export const getAuthUser = (req: Request): AuthUser => {
+  if (!req.user) throw new HttpError(401, "Not authenticated");
+  return req.user;
+};
