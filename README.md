@@ -8,6 +8,16 @@ The Next.js client lives in the [FixMate Client](https://github.com/bappycode/Fi
 - **Client:** https://fixmate-client-peach.vercel.app
 - **Health check:** `GET /api/health`
 
+## Demo accounts
+
+These accounts work on the live site, which signs in through the client.
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Admin | admin@gmail.com | Admin000 |
+| Technician | alex@gmail.com | Alex000 |
+| Customer | david@gmail.com | David000 |
+
 ## How it works
 
 - **Authentication.** Sign-in is handled by Better Auth in the client app. The client sends its JWT as `Authorization: Bearer <token>`. This server checks the signature against the client's public keys (`<AUTH_BASE_URL>/api/auth/jwks`) and then reads the user's **current role from MongoDB on every request**, so a role change takes effect at once.
@@ -19,6 +29,19 @@ The Next.js client lives in the [FixMate Client](https://github.com/bappycode/Fi
 ## Tech stack
 
 Node.js 22, Express 5, MongoDB (official driver), Stripe, `jose` (JWT verification), Helmet, CORS, `express-rate-limit`, TypeScript.
+
+### npm packages used
+
+| Package | Used for |
+| --- | --- |
+| `express` | The web server and routing |
+| `mongodb` | Database driver |
+| `stripe` | Stripe Checkout sessions, payment verification and webhook signatures |
+| `jose` | Verifying the JWT against the client's public keys |
+| `cors` | Allowing only the client's address to call the API |
+| `helmet` | Secure HTTP headers |
+| `express-rate-limit` | Limiting how many requests one address can make |
+| `typescript`, `tsx`, `@types/node`, `@types/express`, `@types/cors` | TypeScript and running it in development |
 
 ## API overview
 
