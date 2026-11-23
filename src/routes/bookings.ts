@@ -12,20 +12,10 @@ export const bookingsRouter = Router();
 
 const NOT_FOUND = "Booking not found";
 
-// ============================================================================
-// CUSTOMER (verifyToken, then verifyCustomer)
-// ============================================================================
-// Every customer query also matches customerEmail with the signed-in customer's email,
-// so a customer can only ever see or change their own bookings.
-
-// POST /api/bookings
-// A customer sends a repair request. The service details are copied into the booking, so
-// it still shows correctly if the service is edited or deleted later.
 bookingsRouter.post("/", verifyToken, verifyCustomer, async (req, res) => {
   const customer = getAuthUser(req);
   const input = parseBookingRequest(req.body);
 
-  // Only a service that is public (approved and switched on) can be booked.
   const service = await servicesCollection.findOne({
     _id: parseObjectId(input.serviceId, "Service not found"),
     approvalStatus: "approved",
@@ -33,13 +23,10 @@ bookingsRouter.post("/", verifyToken, verifyCustomer, async (req, res) => {
   });
   if (!service) throw new HttpError(404, "Service not found");
 
-  // Technicians and admins cannot book at all (verifyCustomer). This also stops someone who was
-  // a technician, then became a customer, from booking a service they created.
   if (service.technicianEmail === customer.email) {
     throw new HttpError(403, "You cannot request your own service");
   }
 
-  // One active request per customer per service.
   const alreadyActive = await bookingsCollection.findOne({
     customerEmail: customer.email,
     serviceId: input.serviceId,
@@ -74,8 +61,6 @@ bookingsRouter.post("/", verifyToken, verifyCustomer, async (req, res) => {
   res.status(201).json({ booking: { _id: insertedId, ...booking } });
 });
 
-// GET /api/bookings/my
-// The customer's own bookings, newest first.
 bookingsRouter.get("/my", verifyToken, verifyCustomer, async (req, res) => {
   const customer = getAuthUser(req);
 
@@ -87,8 +72,6 @@ bookingsRouter.get("/my", verifyToken, verifyCustomer, async (req, res) => {
   res.json({ bookings });
 });
 
-// PATCH /api/bookings/:id/cancel
-// A customer can cancel only while the job is still "requested" (see the pipeline).
 bookingsRouter.patch("/:id/cancel", verifyToken, verifyCustomer, async (req, res) => {
   const customer = getAuthUser(req);
   const id = parseObjectId(req.params.id, NOT_FOUND);
@@ -97,8 +80,6 @@ bookingsRouter.patch("/:id/cancel", verifyToken, verifyCustomer, async (req, res
   if (!booking) throw new HttpError(404, NOT_FOUND);
   assertTransition(booking.status, "cancelled", "customer");
 
-  // The filter repeats the status we just checked. If the technician accepted the job a
-  // moment ago, nothing matches, and the customer is told instead of cancelling an accepted job.
   const now = new Date();
   const updated = await bookingsCollection.findOneAndUpdate(
     { _id: id, customerEmail: customer.email, status: booking.status },
@@ -113,13 +94,6 @@ bookingsRouter.patch("/:id/cancel", verifyToken, verifyCustomer, async (req, res
   res.json({ booking: updated });
 });
 
-// ============================================================================
-// TECHNICIAN (verifyToken, then verifyTechnician)
-// ============================================================================
-// Every query also matches technicianEmail with the signed-in technician's email.
-
-// GET /api/bookings/technician?status=
-// Requests for the technician's own services, newest first. Without ?status, all of them.
 bookingsRouter.get("/technician", verifyToken, verifyTechnician, async (req, res) => {
   const technician = getAuthUser(req);
   const status = BOOKING_STATUSES.find((option) => option === req.query.status);
@@ -132,9 +106,6 @@ bookingsRouter.get("/technician", verifyToken, verifyTechnician, async (req, res
   res.json({ bookings });
 });
 
-// PATCH /api/bookings/:id/status  { status, finalAmount? }
-// The technician moves the job forward one step at a time. The allowed steps live in
-// BOOKING_TRANSITIONS. Completing a job needs a final amount greater than 0.
 bookingsRouter.patch("/:id/status", verifyToken, verifyTechnician, async (req, res) => {
   const technician = getAuthUser(req);
   const id = parseObjectId(req.params.id, NOT_FOUND);

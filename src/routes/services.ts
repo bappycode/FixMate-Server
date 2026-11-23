@@ -11,18 +11,10 @@ import { parseServiceQuery } from "../validators/service-query.js";
 
 export const servicesRouter = Router();
 
-// Public responses never include the technician's email address.
 const PUBLIC_PROJECTION = { technicianEmail: 0 } as const;
 
 const NOT_FOUND = "Service not found";
 
-// ============================================================================
-// PUBLIC
-// ============================================================================
-
-// GET /api/services?search=&category=&mode=&sort=&page=&limit=
-// Public. Searching, filtering, sorting and paging all happen in MongoDB, not in the browser.
-// `total` is how many services match the filters in all, so the client can show page buttons.
 servicesRouter.get("/", async (req, res) => {
   const query = parseServiceQuery(req.query);
   const filter = buildPublicFilter(query);
@@ -40,17 +32,6 @@ servicesRouter.get("/", async (req, res) => {
   res.json({ services, total, page: query.page, pageSize: query.limit });
 });
 
-// ============================================================================
-// TECHNICIAN (verifyToken, then verifyTechnician)
-// ============================================================================
-// Every query below also matches technicianEmail with the signed-in technician's email.
-// So a technician can only ever see or change their own services, and someone else's
-// service looks exactly like one that does not exist (404).
-
-// POST /api/services
-// The service is saved as "pending" and stays hidden from the public until an admin
-// approves it. The owner comes from the verified token, never from the body, and so do
-// the approval status and availability, so a client cannot choose them.
 servicesRouter.post("/", verifyToken, verifyTechnician, async (req, res) => {
   const technician = getAuthUser(req);
 
@@ -67,8 +48,6 @@ servicesRouter.post("/", verifyToken, verifyTechnician, async (req, res) => {
   res.status(201).json({ service: { _id: insertedId, ...service } });
 });
 
-// GET /api/services/mine
-// All of the technician's own services, in any approval state, newest first.
 servicesRouter.get("/mine", verifyToken, verifyTechnician, async (req, res) => {
   const technician = getAuthUser(req);
 
@@ -80,8 +59,6 @@ servicesRouter.get("/mine", verifyToken, verifyTechnician, async (req, res) => {
   res.json({ services });
 });
 
-// GET /api/services/mine/:id
-// One of the technician's own services, used to pre-fill the edit form.
 servicesRouter.get("/mine/:id", verifyToken, verifyTechnician, async (req, res) => {
   const technician = getAuthUser(req);
 
@@ -94,9 +71,6 @@ servicesRouter.get("/mine/:id", verifyToken, verifyTechnician, async (req, res) 
   res.json({ service });
 });
 
-// PATCH /api/services/:id
-// Edit a service. Any edit sends it back to "pending", so an admin re-checks the new
-// content before it is public again. The same rules as creating a service apply.
 servicesRouter.patch("/:id", verifyToken, verifyTechnician, async (req, res) => {
   const technician = getAuthUser(req);
   const update = parseServiceInput(req.body);
@@ -111,9 +85,6 @@ servicesRouter.patch("/:id", verifyToken, verifyTechnician, async (req, res) => 
   res.json({ service });
 });
 
-// PATCH /api/services/:id/availability  { isAvailable }
-// Switch a service on or off. This does NOT change its approval: turning it off just hides
-// it from public pages, and turning it back on shows it again.
 servicesRouter.patch("/:id/availability", verifyToken, verifyTechnician, async (req, res) => {
   const technician = getAuthUser(req);
   const isAvailable = parseAvailability(req.body);
@@ -128,8 +99,6 @@ servicesRouter.patch("/:id/availability", verifyToken, verifyTechnician, async (
   res.json({ service });
 });
 
-// DELETE /api/services/:id
-// Bookings keep their own copy of the service details, so deleting a service is safe.
 servicesRouter.delete("/:id", verifyToken, verifyTechnician, async (req, res) => {
   const technician = getAuthUser(req);
 
@@ -142,12 +111,6 @@ servicesRouter.delete("/:id", verifyToken, verifyTechnician, async (req, res) =>
   res.status(204).end();
 });
 
-// ============================================================================
-// PUBLIC DETAILS (kept last so "/mine" is not mistaken for an id)
-// ============================================================================
-
-// GET /api/services/:id
-// Public. A service that is missing, not approved or switched off is a 404 for everyone.
 servicesRouter.get("/:id", async (req, res) => {
   const service = await servicesCollection.findOne({
     _id: parseObjectId(req.params.id, NOT_FOUND),
@@ -156,8 +119,6 @@ servicesRouter.get("/:id", async (req, res) => {
   });
   if (!service) throw new HttpError(404, NOT_FOUND);
 
-  // The service document stores the technician's email only to link the two records.
-  // Use it to load the technician's public profile, then keep it out of the response.
   const { technicianEmail, ...publicService } = service;
   const technician = await usersCollection.findOne(
     { email: technicianEmail },

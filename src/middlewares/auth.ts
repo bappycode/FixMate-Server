@@ -5,8 +5,6 @@ import { db } from "../lib/db.js";
 import type { AuthUser, UserRole } from "../types/auth.js";
 import { HttpError } from "../utils/httpError.js";
 
-// Better Auth (running in the Next.js client) publishes its public keys here.
-// jose fetches them once, caches them, and refetches if it sees an unknown key id.
 const jwks = createRemoteJWKSet(new URL(`${env.authBaseUrl}/api/auth/jwks`));
 
 const getBearerToken = (req: Request): string | null => {
@@ -14,7 +12,6 @@ const getBearerToken = (req: Request): string | null => {
   return scheme === "Bearer" && token ? token : null;
 };
 
-/** 401 unless the request carries a valid, unexpired access token. */
 export const verifyToken: RequestHandler = async (req, _res, next) => {
   const token = getBearerToken(req);
   if (!token) {
@@ -36,8 +33,6 @@ export const verifyToken: RequestHandler = async (req, _res, next) => {
     throw new HttpError(401, "Invalid access token");
   }
 
-  // The role is read from the database, not trusted from the token, so a role
-  // change made by an admin applies immediately.
   const user = await db
     .collection<{ email: string; name: string; role?: UserRole }>("user")
     .findOne({ email });
@@ -67,12 +62,10 @@ const requireRole =
     next();
   };
 
-// Always use these after verifyToken.
 export const verifyCustomer = requireRole("customer");
 export const verifyTechnician = requireRole("technician");
 export const verifyAdmin = requireRole("admin");
 
-/** The signed-in user. Only call this in routes that run verifyToken first. */
 export const getAuthUser = (req: Request): AuthUser => {
   if (!req.user) throw new HttpError(401, "Not authenticated");
   return req.user;

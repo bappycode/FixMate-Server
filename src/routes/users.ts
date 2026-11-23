@@ -6,9 +6,6 @@ import { HttpError } from "../utils/httpError.js";
 
 export const usersRouter = Router();
 
-// Any signed-in user can update their own profile. The target user always comes from
-// the verified token (req.user), never from the request body, so nobody can edit
-// someone else's profile.
 usersRouter.patch("/profile", verifyToken, async (req, res) => {
   const authUser = req.user;
   if (!authUser) throw new HttpError(401, "Not authenticated");

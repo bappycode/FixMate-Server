@@ -1,5 +1,3 @@
-// The allowed values for service fields. The client keeps the same lists in src/lib/categories.ts.
-
 export const CATEGORY_NAMES = [
   "Smartphone",
   "Laptop & PC",
@@ -17,6 +15,5 @@ export type ServiceMode = (typeof SERVICE_MODES)[number];
 export const APPROVAL_STATUSES = ["pending", "approved", "rejected"] as const;
 export type ApprovalStatus = (typeof APPROVAL_STATUSES)[number];
 
-/** The sort options the browse page offers (?sort=...). */
 export const SERVICE_SORTS = ["newest", "price-asc", "price-desc"] as const;
 export type ServiceSort = (typeof SERVICE_SORTS)[number];

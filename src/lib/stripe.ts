@@ -4,10 +4,6 @@ import { HttpError } from "../utils/httpError.js";
 
 let client: Stripe | undefined;
 
-/**
- * The Stripe client, created on first use with the secret key from the environment.
- * Without a key the payment routes answer 503 instead of crashing the server.
- */
 export function getStripe(): Stripe {
   if (!env.stripeSecretKey) {
     throw new HttpError(503, "Payments are not configured yet");
@@ -17,10 +13,6 @@ export function getStripe(): Stripe {
   return client;
 }
 
-/**
- * Runs a Stripe call and turns Stripe's errors into our own: a session that does not
- * exist is a 404, and anything else from Stripe is a 502 (Stripe failed, not the customer).
- */
 export async function callStripe<T>(request: () => Promise<T>): Promise<T> {
   try {
     return await request();
